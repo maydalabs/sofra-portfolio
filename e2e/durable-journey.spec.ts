@@ -38,11 +38,17 @@ async function signIn(page: import('@playwright/test').Page, email: string) {
   const [verification] = await sql<{ identifier: string }[]>`
     select identifier from public.verification
     where value::jsonb->>'email' = ${email}
+      and value::jsonb->>'type' = 'magic-link'
+      and identifier like 'magic-link:%'
     order by "createdAt" desc limit 1
   `
   expect(verification, `no magic link was issued for ${email}`).toBeTruthy()
+  // Better Auth namespaces stored verification identifiers; the emailed token
+  // excludes that prefix. Never interpret another verification type as a link.
+  expect(verification.identifier).toMatch(/^magic-link:.+$/)
+  const token = verification.identifier.slice('magic-link:'.length)
   await page.goto(
-    `/api/auth/magic-link/verify?token=${verification.identifier}&callbackURL=/en/account`,
+    `/api/auth/magic-link/verify?token=${encodeURIComponent(token)}&callbackURL=/en/account`,
   )
   await page.waitForURL(/\/en\/(account|host|admin)/)
 }

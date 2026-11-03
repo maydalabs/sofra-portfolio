@@ -51,6 +51,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Check production dependencies for high-severity advisories
+        run: pnpm audit --prod --audit-level=high
+
       - name: Apply migrations and fixtures
         run: |
           node db/migrate.mjs --reset

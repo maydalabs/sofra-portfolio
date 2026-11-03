@@ -60,8 +60,9 @@ and [product decisions](docs/DECISIONS.md) explain the tradeoffs in more detail.
 
 ## Run the local walkthrough
 
-You need **Node.js 22**, **pnpm 11**, and **Docker**. These instructions are for
-local development with fictional data.
+You need **Node.js 22.22.2 or later in the 22.x line**, **pnpm 11**, and
+**Docker**. The Node.js minimum matches the test toolchain. These instructions
+are for local development with fictional data.
 
 ```bash
 pnpm install --frozen-lockfile
