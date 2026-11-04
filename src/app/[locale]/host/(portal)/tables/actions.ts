@@ -11,8 +11,13 @@ import {
   assertHasAnyRole,
   assertVerifiedEmail,
 } from '@/server/authorization/roles'
-import { createHostedTableSchema } from '@/features/hosted-tables/schemas'
+import {
+  createHostedTableSchema,
+  hostedTableIdSchema,
+  reviseHostedTableSchema,
+} from '@/features/hosted-tables/schemas'
 import type { CreateHostedTableResult } from '@/features/hosted-tables/create-result'
+import type { ReviseHostedTableResult } from '@/features/hosted-tables/revise-result'
 import {
   findHostCertification,
   findHostTableById,
@@ -28,6 +33,7 @@ import { getServerTimeMilliseconds } from '@/server/time/clock'
 export async function submitHostedTableAction(formData: FormData) {
   const actor = await getCurrentActor()
   if (!actor) throw new Error('Authentication required')
+  assertVerifiedEmail(actor)
   assertHasAnyRole(actor, ['certified_host'])
   const tableId = String(formData.get('tableId'))
   const locale = formData.get('locale') === 'tr' ? 'tr' : 'en'
@@ -58,6 +64,7 @@ export async function submitHostedTableAction(formData: FormData) {
       }
       throw error
     }
+    revalidateHostedTableWorkspaces(table.id, locale)
     redirect(`/${locale}/host/tables/${table.id}/edit?submission=submitted`)
   }
 
@@ -75,6 +82,66 @@ export async function submitHostedTableAction(formData: FormData) {
   })
   console.info('[Sofra demo audit]', audit)
   redirect(`/${locale}/host/tables/${table.id}/edit?submission=reviewed`)
+}
+
+/** An owner may revise experience text while a table is still unpublished. */
+export async function reviseHostedTableAction(
+  tableId: string,
+  rawInput: unknown,
+  locale = 'en',
+): Promise<ReviseHostedTableResult> {
+  const actor = await getCurrentActor()
+  if (!actor) throw new Error('Authentication required')
+  assertVerifiedEmail(actor)
+  assertHasAnyRole(actor, ['certified_host'])
+
+  const parsedId = hostedTableIdSchema.safeParse(tableId)
+  const parsed = reviseHostedTableSchema.safeParse(rawInput)
+  if (!parsedId.success || !parsed.success) return { status: 'invalid_request' }
+  if (!canPersistWrites()) return { status: 'unavailable' }
+
+  try {
+    const writes = await getSofraHostWriteRepository(actor.id)
+    await writes.reviseHostedTableDraft({
+      tableId: parsedId.data,
+      menuTitle: parsed.data.menuTitle,
+      menuDescription: parsed.data.menuDescription,
+      atmosphere: parsed.data.atmosphere,
+      expectedHouseholdParticipants: parsed.data.expectedHouseholdParticipants,
+      practicalInformation: parsed.data.practicalInformation,
+      accessibilityInformation: parsed.data.accessibilityInformation,
+    })
+  } catch (error) {
+    if (error instanceof HostWriteError) {
+      if (error.code === 'TABLE_NOT_FOUND') return { status: 'not_found' }
+      if (error.code === 'TABLE_NOT_EDITABLE') return { status: 'not_editable' }
+      if (
+        error.code === 'NO_ACTIVE_CERTIFICATION' ||
+        error.code === 'NO_CERTIFIED_HOUSEHOLD'
+      )
+        return { status: 'not_certified' }
+      if (error.code === 'TABLE_CONTENT_INVALID')
+        return { status: 'invalid_request' }
+    }
+    // Neither private content nor raw database errors belong in the response.
+    return { status: 'unexpected_error' }
+  }
+
+  revalidateHostedTableWorkspaces(parsedId.data, locale)
+  return { status: 'saved' }
+}
+
+function revalidateHostedTableWorkspaces(tableId: string, locale: string) {
+  const locales = locale === 'tr' ? ['tr', 'en'] : ['en', 'tr']
+  for (const language of locales) {
+    revalidatePath(`/${language}/host/tables/${tableId}/edit`)
+    revalidatePath(`/${language}/host/tables`)
+    revalidatePath(`/${language}/host/dashboard`)
+    revalidatePath(`/${language}/admin/tables/${tableId}`)
+    revalidatePath(`/${language}/admin/tables`)
+    revalidatePath(`/${language}/admin`)
+    revalidatePath(`/${language}/admin/audit`)
+  }
 }
 
 const checkInOutcomeByCode = {

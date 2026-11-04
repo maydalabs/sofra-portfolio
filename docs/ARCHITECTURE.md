@@ -20,6 +20,14 @@ Traveler booking preparation runs through the server-only booking service. It va
 
 Post-dinner input uses three distinct server-only intents: moderation-pending public review, operations-only constructive feedback, and restricted safety incident. Each exposes a separate safe result projection. Feedback and incident text are stored in their restricted records on the durable path, rather than echoed in public results, audit payloads, or analytics events. An open safety incident holds the linked payout; a local demo review does not claim that an incident or payout change was persisted.
 
+Host draft revision uses an authenticated action and an actor-bound write
+repository. `revise_hosted_table_draft` locks the table, checks ownership and
+active household certification, and accepts only menu and experience text in
+`draft` or `changes_requested`. It preserves status, slug, scheduling, capacity
+and money. Its audit records contain changed field names, never the edited
+text. Saving and submission remain separate; the form blocks submission while
+edits are unsaved. Private operator review notes are not part of the host form.
+
 ## Layers
 
 - `src/app`: routing, metadata, localized layouts, and page composition.

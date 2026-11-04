@@ -12,13 +12,13 @@ confirmed → roster_locked → completed → archived
 draft/submitted/changes_requested/approved/published/minimum_reached/confirmed/roster_locked → cancelled
 ```
 
-- Only drafts or change-requested tables can be edited by hosts.
+- Owners with active household certification can save menu and experience text on drafts or change-requested tables. Saving preserves the current status; scheduling, capacity and pricing are not editable in this revision flow.
 - Only submitted tables can be approved or sent back for changes.
 - Only an operator/administrator can approve; only an approved table can be published.
 - A suspended host cannot submit or publish a table.
 - Capacity cannot exceed active certification.
 - Completed and cancelled tables cannot return to a bookable state.
-- The local submission review validates an owned draft or change-requested table and the host’s active certification without changing durable state. Production submission remains unavailable until a protected write repository exists.
+- Durable revision and submission use separate protected SQL writes. Submission moves an owned draft or change-requested table to `submitted` after its certification checks. Demo revision/submission only validates and previews; it does not save or change status.
 
 ## Booking
 

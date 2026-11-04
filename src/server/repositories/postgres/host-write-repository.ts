@@ -13,6 +13,7 @@ import {
   type HostApplicationRecord,
   type HostWriteErrorCode,
   type HostedTableWriteRecord,
+  type ReviseHostedTableDraftInput,
   type SofraHostWriteRepository,
   type SubmitHostApplicationInput,
 } from '../write-contracts'
@@ -53,6 +54,7 @@ const errorCodesBySqlState: Record<string, HostWriteErrorCode> = {
   SF038: 'DINNER_NOT_STARTED',
   SF039: 'ROSTER_MISMATCH',
   SF040: 'UNRESOLVED_BOOKINGS',
+  SF045: 'TABLE_CONTENT_INVALID',
 }
 
 function toHostWriteError(error: unknown): HostWriteError {
@@ -169,6 +171,28 @@ export class PostgresSofraHostWriteRepository implements SofraHostWriteRepositor
           ${input.expectedHouseholdParticipants}::text,
           ${input.practicalInformation}::text,
           ${input.accessibilityInformation ?? ''}::text
+        )
+      `
+      return toTable(rows[0])
+    } catch (error) {
+      throw toHostWriteError(error)
+    }
+  }
+
+  async reviseHostedTableDraft(
+    input: ReviseHostedTableDraftInput,
+  ): Promise<HostedTableWriteRecord> {
+    try {
+      const rows = await this.sql<HostedTableRow[]>`
+        select * from public.revise_hosted_table_draft(
+          ${this.actorId}::uuid,
+          ${input.tableId}::uuid,
+          ${input.menuTitle}::text,
+          ${input.menuDescription}::text,
+          ${input.atmosphere}::text,
+          ${input.expectedHouseholdParticipants}::text,
+          ${input.practicalInformation}::text,
+          ${input.accessibilityInformation}::text
         )
       `
       return toTable(rows[0])

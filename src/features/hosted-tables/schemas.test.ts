@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createHostedTableValidationSchema,
+  reviseHostedTableSchema,
   type CreateHostedTableValidationMessages,
 } from './schemas'
 
@@ -95,5 +96,67 @@ describe('hosted-table validation schema', () => {
         }),
       ]),
     )
+  })
+})
+
+describe('hosted-table revision validation', () => {
+  const revision = {
+    menuTitle: validDraft.menuTitle,
+    menuDescription: validDraft.menuDescription,
+    atmosphere: validDraft.atmosphere,
+    expectedHouseholdParticipants: validDraft.expectedHouseholdParticipants,
+    practicalInformation: validDraft.practicalInformation,
+    accessibilityInformation: '',
+  }
+
+  it('normalizes experience text and permits clearing optional accessibility information', () => {
+    expect(
+      reviseHostedTableSchema.parse({
+        ...revision,
+        menuTitle: '  Sunday dinner  ',
+        accessibilityInformation: '  ',
+      }),
+    ).toEqual(revision)
+  })
+
+  it('rejects attempted changes to identity, lifecycle, scheduling and money', () => {
+    for (const field of [
+      'tableId',
+      'actorId',
+      'status',
+      'startsAt',
+      'format',
+      'proposedCapacity',
+      'minimumGuestCount',
+      'hostNetPayoutKurus',
+      'guestPriceKurus',
+      'slug',
+    ]) {
+      expect(
+        reviseHostedTableSchema.safeParse({ ...revision, [field]: 'untrusted' })
+          .success,
+      ).toBe(false)
+    }
+  })
+
+  it('requires every editable field and bounds accessibility text', () => {
+    expect(
+      reviseHostedTableSchema.safeParse({
+        ...revision,
+        menuDescription: undefined,
+      }).success,
+    ).toBe(false)
+    expect(
+      reviseHostedTableSchema.safeParse({
+        ...revision,
+        accessibilityInformation: 'a'.repeat(501),
+      }).success,
+    ).toBe(false)
+    expect(
+      reviseHostedTableSchema.safeParse({
+        ...revision,
+        accessibilityInformation: 'a'.repeat(500),
+      }).success,
+    ).toBe(true)
   })
 })

@@ -353,6 +353,48 @@
     "dwellingOther": "Other",
     "privateRecordDemoNote": "In the demo walkthrough these fields are read-only and nothing is saved."
   },
+  "ReviseTable": {
+    "title": "Revise the dinner experience",
+    "intro": "Update your menu and the details of the evening, then save before submitting to Sofra. These details become public after approval and publication; keep your exact address and arrival instructions in Private address.",
+    "formLabel": "Revise table details",
+    "save": "Save changes",
+    "review": "Review changes locally",
+    "pending": "Please wait…",
+    "discard": "Discard changes",
+    "unsaved": "Save or discard your changes before submitting this table to Sofra.",
+    "demoNote": "This walkthrough lets you review changes locally. It does not save them. Discard your edits to continue the existing table’s submission preview.",
+    "fields": {
+      "menuTitle": "Menu title",
+      "menuDescription": "Complete household-selected menu",
+      "atmosphere": "Atmosphere",
+      "expectedHouseholdParticipants": "Expected household participants",
+      "practicalInformation": "Practical home information",
+      "accessibilityInformation": "Accessibility information (optional)"
+    },
+    "validation": {
+      "menuTitleMin": "Give the household menu a clear title.",
+      "menuTitleMax": "Keep the menu title under 100 characters.",
+      "menuDescriptionMin": "Describe the complete host-selected menu.",
+      "menuDescriptionMax": "Keep the menu description under 1,200 characters.",
+      "atmosphereMin": "Describe the atmosphere in at least 10 characters.",
+      "atmosphereMax": "Keep the atmosphere under 240 characters.",
+      "participantsMin": "Describe the expected household participants in at least 10 characters.",
+      "participantsMax": "Keep household participants under 240 characters.",
+      "practicalMin": "Add practical home information in at least 10 characters.",
+      "practicalMax": "Keep practical home information under 500 characters.",
+      "accessibilityMax": "Keep accessibility information under 500 characters."
+    },
+    "outcomes": {
+      "saved": "Changes saved. Your table is ready to submit to Sofra for review.",
+      "reviewed": "Changes reviewed locally. Nothing was saved or submitted.",
+      "unavailable": "Changes could not be saved right now. Your edits are still here; please try again.",
+      "not_certified": "Your household certification is no longer active. Your edits have not been saved. Contact Sofra before continuing.",
+      "not_editable": "This table has moved beyond the draft stage. Your edits have not been saved. Reload to see its current status.",
+      "not_found": "This table is no longer available to your account. Your edits have not been saved.",
+      "invalid_request": "Check the table details and try again. Your edits have not been saved.",
+      "unexpected_error": "Changes could not be saved. Your edits are still here; please try again."
+    }
+  },
   "HostJourney": {
     "eyebrow": "Table journey",
     "title": "From private draft to hosted dinner",

@@ -8,13 +8,18 @@ import { auth } from '@/server/auth/auth'
 
 const emailSchema = z.string().trim().email()
 
-/** Headers worth forwarding: the rate limiter keys on the client address. */
+/** Preserve client identity for rate limiting and request context for CSRF checks. */
 const forwardedHeaders = [
   'x-forwarded-for',
   'x-real-ip',
   'cf-connecting-ip',
   'user-agent',
   'cookie',
+  'origin',
+  'referer',
+  'sec-fetch-site',
+  'sec-fetch-mode',
+  'sec-fetch-dest',
 ]
 
 export async function requestMagicLinkAction(formData: FormData) {
@@ -36,7 +41,7 @@ export async function requestMagicLinkAction(formData: FormData) {
   const outgoing = new Headers({ 'content-type': 'application/json' })
   for (const name of forwardedHeaders) {
     const value = incoming.get(name)
-    if (value) outgoing.set(name, value)
+    if (value !== null) outgoing.set(name, value)
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'

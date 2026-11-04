@@ -353,6 +353,48 @@
     "dwellingOther": "Diğer",
     "privateRecordDemoNote": "Demo turunda bu alanlar salt okunurdur ve hiçbir şey kaydedilmez."
   },
+  "ReviseTable": {
+    "title": "Akşam deneyimini düzenle",
+    "intro": "Menünüzü ve akşamın ayrıntılarını güncelleyin, ardından Sofra'ya göndermeden önce kaydedin. Bu bilgiler onaylanıp yayımlandıktan sonra herkese açık olur; tam adresinizi ve varış talimatlarını Özel adres bölümünde tutun.",
+    "formLabel": "Sofra bilgilerini düzenle",
+    "save": "Değişiklikleri kaydet",
+    "review": "Değişiklikleri yerel olarak incele",
+    "pending": "Lütfen bekleyin…",
+    "discard": "Değişikliklerden vazgeç",
+    "unsaved": "Bu sofrayı Sofra'ya göndermeden önce değişikliklerinizi kaydedin veya değişikliklerden vazgeçin.",
+    "demoNote": "Bu turda değişiklikleri yerel olarak inceleyebilirsiniz; değişiklikler kaydedilmez. Mevcut sofranın gönderim ön izlemesine devam etmek için düzenlemelerinizden vazgeçin.",
+    "fields": {
+      "menuTitle": "Menü başlığı",
+      "menuDescription": "Ev halkının seçtiği eksiksiz menü",
+      "atmosphere": "Atmosfer",
+      "expectedHouseholdParticipants": "Katılması beklenen ev halkı üyeleri",
+      "practicalInformation": "Evle ilgili pratik bilgiler",
+      "accessibilityInformation": "Erişilebilirlik bilgileri (isteğe bağlı)"
+    },
+    "validation": {
+      "menuTitleMin": "Ev halkı menüsüne açıklayıcı bir başlık verin.",
+      "menuTitleMax": "Menü başlığını 100 karakterden kısa tutun.",
+      "menuDescriptionMin": "Ev halkının seçtiği eksiksiz menüyü açıklayın.",
+      "menuDescriptionMax": "Menü açıklamasını 1.200 karakterden kısa tutun.",
+      "atmosphereMin": "Atmosferi en az 10 karakterle açıklayın.",
+      "atmosphereMax": "Atmosferi 240 karakterden kısa tutun.",
+      "participantsMin": "Katılması beklenen ev halkı üyelerini en az 10 karakterle açıklayın.",
+      "participantsMax": "Ev halkı katılımcılarını 240 karakterden kısa tutun.",
+      "practicalMin": "Evle ilgili pratik bilgileri en az 10 karakterle ekleyin.",
+      "practicalMax": "Pratik ev bilgilerini 500 karakterden kısa tutun.",
+      "accessibilityMax": "Erişilebilirlik bilgilerini 500 karakterden kısa tutun."
+    },
+    "outcomes": {
+      "saved": "Değişiklikler kaydedildi. Sofranız incelenmek üzere Sofra'ya gönderilmeye hazır.",
+      "reviewed": "Değişiklikler yerel olarak incelendi. Hiçbir bilgi kaydedilmedi veya gönderilmedi.",
+      "unavailable": "Değişiklikler şu anda kaydedilemedi. Düzenlemeleriniz burada duruyor; lütfen yeniden deneyin.",
+      "not_certified": "Hane sertifikanız artık etkin değil. Düzenlemeleriniz kaydedilmedi. Devam etmeden önce Sofra ile iletişime geçin.",
+      "not_editable": "Bu sofra artık taslak aşamasında değil. Düzenlemeleriniz kaydedilmedi. Güncel durumu görmek için sayfayı yenileyin.",
+      "not_found": "Bu sofraya artık hesabınızdan erişilemiyor. Düzenlemeleriniz kaydedilmedi.",
+      "invalid_request": "Sofra bilgilerini kontrol edip yeniden deneyin. Düzenlemeleriniz kaydedilmedi.",
+      "unexpected_error": "Değişiklikler kaydedilemedi. Düzenlemeleriniz burada duruyor; lütfen yeniden deneyin."
+    }
+  },
   "HostJourney": {
     "eyebrow": "Sofra yolculuğu",
     "title": "Özel taslaktan ev sofrasına",

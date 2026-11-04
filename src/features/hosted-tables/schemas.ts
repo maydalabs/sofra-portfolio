@@ -67,6 +67,71 @@ const defaultValidationMessages: CreateHostedTableValidationMessages = {
   practicalMax: 'Keep practical home information under 500 characters',
 }
 
+type ExperienceTextValidationMessages = Pick<
+  CreateHostedTableValidationMessages,
+  | 'menuTitleMin'
+  | 'menuTitleMax'
+  | 'menuDescriptionMin'
+  | 'menuDescriptionMax'
+  | 'atmosphereMin'
+  | 'atmosphereMax'
+  | 'participantsMin'
+  | 'participantsMax'
+  | 'practicalMin'
+  | 'practicalMax'
+>
+
+function experienceTextFields(messages: ExperienceTextValidationMessages) {
+  return {
+    menuTitle: z
+      .string()
+      .trim()
+      .min(5, messages.menuTitleMin)
+      .max(100, messages.menuTitleMax),
+    menuDescription: z
+      .string()
+      .trim()
+      .min(30, messages.menuDescriptionMin)
+      .max(1_200, messages.menuDescriptionMax),
+    atmosphere: z
+      .string()
+      .trim()
+      .min(10, messages.atmosphereMin)
+      .max(240, messages.atmosphereMax),
+    expectedHouseholdParticipants: z
+      .string()
+      .trim()
+      .min(10, messages.participantsMin)
+      .max(240, messages.participantsMax),
+    practicalInformation: z
+      .string()
+      .trim()
+      .min(10, messages.practicalMin)
+      .max(500, messages.practicalMax),
+  }
+}
+
+export function createReviseHostedTableValidationSchema(
+  messages: ExperienceTextValidationMessages & { accessibilityMax: string } = {
+    ...defaultValidationMessages,
+    accessibilityMax: 'Keep accessibility information under 500 characters',
+  },
+) {
+  return z
+    .object({
+      ...experienceTextFields(messages),
+      accessibilityInformation: z
+        .string()
+        .trim()
+        .max(500, messages.accessibilityMax),
+    })
+    .strict()
+}
+
+export const reviseHostedTableSchema = createReviseHostedTableValidationSchema()
+export const hostedTableIdSchema = z.uuid()
+export type ReviseHostedTableInput = z.infer<typeof reviseHostedTableSchema>
+
 export function createHostedTableValidationSchema({
   messages = defaultValidationMessages,
   limits = {},
@@ -78,16 +143,7 @@ export function createHostedTableValidationSchema({
 
   return z
     .object({
-      menuTitle: z
-        .string()
-        .trim()
-        .min(5, messages.menuTitleMin)
-        .max(100, messages.menuTitleMax),
-      menuDescription: z
-        .string()
-        .trim()
-        .min(30, messages.menuDescriptionMin)
-        .max(1_200, messages.menuDescriptionMax),
+      ...experienceTextFields(messages),
       startsAt: z
         .string()
         .min(1, messages.startsAtRequired)
@@ -111,21 +167,6 @@ export function createHostedTableValidationSchema({
         .int(messages.payoutInteger)
         .min(100, messages.payoutRange)
         .max(100_000, messages.payoutRange),
-      atmosphere: z
-        .string()
-        .trim()
-        .min(10, messages.atmosphereMin)
-        .max(240, messages.atmosphereMax),
-      expectedHouseholdParticipants: z
-        .string()
-        .trim()
-        .min(10, messages.participantsMin)
-        .max(240, messages.participantsMax),
-      practicalInformation: z
-        .string()
-        .trim()
-        .min(10, messages.practicalMin)
-        .max(500, messages.practicalMax),
     })
     .superRefine((input, context) => {
       if (input.minimumGuestCount > input.proposedCapacity) {

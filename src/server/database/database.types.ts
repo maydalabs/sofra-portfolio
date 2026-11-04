@@ -1589,6 +1589,19 @@ export interface Database {
         }
         Returns: unknown
       }
+      revise_hosted_table_draft: {
+        Args: {
+          p_profile_id: string
+          p_table_id: string
+          p_menu_title: string
+          p_menu_description: string
+          p_atmosphere: string
+          p_expected_household_participants: string
+          p_practical_information: string
+          p_accessibility_information: string
+        }
+        Returns: unknown
+      }
       settled_booking_status: {
         Args: {
           p_booking: unknown

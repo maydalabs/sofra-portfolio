@@ -114,6 +114,17 @@ export interface CreateHostedTableDraftInput {
   accessibilityInformation?: string
 }
 
+/** Text-only revisions preserve the approved scheduling and pricing inputs. */
+export interface ReviseHostedTableDraftInput {
+  tableId: string
+  menuTitle: string
+  menuDescription: string
+  atmosphere: string
+  expectedHouseholdParticipants: string
+  practicalInformation: string
+  accessibilityInformation: string
+}
+
 export interface HostedTableWriteRecord {
   id: string
   slug: string
@@ -137,6 +148,7 @@ export type HostWriteErrorCode =
   | 'ACTIVE_TABLE_LIMIT_REACHED'
   | 'TABLE_NOT_FOUND'
   | 'TABLE_NOT_EDITABLE'
+  | 'TABLE_CONTENT_INVALID'
   | 'ADDRESS_INCOMPLETE'
   | 'DINNER_NOT_STARTED'
   | 'ROSTER_MISMATCH'
@@ -198,6 +210,9 @@ export interface SofraHostWriteRepository {
   ): Promise<HostApplicationRecord>
   createHostedTableDraft(
     input: CreateHostedTableDraftInput,
+  ): Promise<HostedTableWriteRecord>
+  reviseHostedTableDraft(
+    input: ReviseHostedTableDraftInput,
   ): Promise<HostedTableWriteRecord>
   submitHostedTable(tableId: string): Promise<HostedTableWriteRecord>
   completeDinner(input: CompleteDinnerInput): Promise<DinnerCompletionRecord>

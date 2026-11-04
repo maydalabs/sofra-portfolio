@@ -18,13 +18,14 @@ curl https://YOUR-DOMAIN/api/health   # 3. confirm
 
 The health check answers the question that matters after a deploy:
 
-At the November 3, 2026 documentation review, the expected migration state is:
+For the local host-revision implementation on November 4, 2026, the expected
+migration state is (this is not a deployment receipt):
 
 ```json
 {
   "status": "ok",
-  "migrations": 22,
-  "latestMigration": "0022_stuck_state_exits.sql"
+  "migrations": 23,
+  "latestMigration": "0023_host_table_revision.sql"
 }
 ```
 

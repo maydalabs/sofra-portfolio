@@ -1,8 +1,13 @@
 import { CheckCircle2, Circle, Clock3, TriangleAlert } from 'lucide-react'
-import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { NextIntlClientProvider } from 'next-intl'
+import {
+  getMessages,
+  getTranslations,
+  setRequestLocale,
+} from 'next-intl/server'
 import { notFound } from 'next/navigation'
 
-import { submitHostedTableAction } from '../../actions'
+import { reviseHostedTableAction, submitHostedTableAction } from '../../actions'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,8 +16,10 @@ import {
   getHostTableJourney,
   type HostJourneyStepState,
 } from '@/features/hosted-tables/host-journey'
+import { ReviseTableForm } from '@/features/hosted-tables/revise-table-form'
 import { Link } from '@/i18n/navigation'
 import { findHostTableById } from '@/server/repositories/queries'
+import { canPersistWrites } from '@/server/repositories/write-factory'
 
 import { requireHostPageActor } from '../../../authorize'
 
@@ -34,6 +41,7 @@ export default async function EditHostedTablePage({
   const editable =
     table.status === 'draft' || table.status === 'changes_requested'
   const journey = getHostTableJourney(table.status)
+  const messages = editable ? await getMessages() : null
   return (
     <Card>
       <CardHeader>
@@ -136,12 +144,34 @@ export default async function EditHostedTablePage({
             ))}
           </ol>
         </section>
+        {editable && messages ? (
+          <NextIntlClientProvider
+            messages={{
+              ReviseTable: messages.ReviseTable,
+              HostPortal: messages.HostPortal,
+            }}
+          >
+            <ReviseTableForm
+              tableId={table.id}
+              initialValues={{
+                menuTitle: table.menuTitle,
+                menuDescription: table.menuDescription,
+                atmosphere: table.atmosphere,
+                expectedHouseholdParticipants:
+                  table.expectedHouseholdParticipants,
+                practicalInformation: table.practicalInformation,
+                accessibilityInformation: table.accessibilityInformation,
+              }}
+              action={
+                canPersistWrites()
+                  ? reviseHostedTableAction.bind(null, table.id)
+                  : undefined
+              }
+              submitAction={submitHostedTableAction}
+            />
+          </NextIntlClientProvider>
+        ) : null}
         <div className="flex flex-wrap gap-3">
-          <form action={submitHostedTableAction}>
-            <input type="hidden" name="tableId" value={table.id} />
-            <input type="hidden" name="locale" value={locale} />
-            <Button disabled={!editable}>{t('submit')}</Button>
-          </form>
           {table.certifiedCapacity - table.availableSeats > 0 ? (
             <Button variant="outline" asChild>
               <Link href={`/host/tables/${table.id}/roster`}>

@@ -1,12 +1,61 @@
 # Local validation — November 4, 2026
 
+## Host draft revision — November 4, 2026
+
+This local change adds text-only revision of owned draft and changes-requested
+hosted tables, with a separate save and resubmission step. It also fixes the
+sign-in action's dropped request-origin context: an existing browser with
+cookies was rejected by Better Auth before reaching the host flow. Original
+origin, referer and fetch metadata now reach the auth handler; its CSRF and
+trusted-origin checks remain enabled.
+
+| Check                       | Result                               | Scope                                                                                |
+| --------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------ |
+| Formatting and ESLint       | Passed                               | Current local change                                                                 |
+| TypeScript                  | Passed                               | Standalone check and production compilation                                          |
+| Unit/component/action suite | 41 files, 168 tests passed           | Includes 22 revision-action, 6 form and 9 sign-in regression cases                   |
+| Fixture-target checks       | 6 passed                             | Local database target validation                                                     |
+| PostgreSQL integration      | 12 files, 145 tests passed           | Includes 22 new revision cases, including concurrent submission                      |
+| Schema and generated types  | 23 migrations applied; types matched | 30 relations, 11 enums, 40 functions                                                 |
+| Production build            | Passed                               | Next.js 16.4.5 / Turbopack; no production server started                             |
+| Existing Chrome walkthrough | Passed                               | Real local sign-in, English draft and Turkish requested-changes save/reload/resubmit |
+| Responsive form checks      | Passed                               | English at 320 px, Turkish at 375 px, plus desktop inspection                        |
+| Demo revision               | Passed                               | Honest preview, unsaved submission guard and discard; no database revision           |
+
+Checks used Node.js 22.23.4, pnpm 11.28.10, installed locked dependencies, and a
+separate source copy with environment files, private artifacts and Git history
+excluded. A newly created PostgreSQL 18.6 container was verified empty and
+bound to a random loopback-only port before migration/fixtures. Both database
+URLs explicitly targeted that disposable database. Existing services and data
+were preserved. No payment, mail, analytics or monitoring credentials were
+loaded; no actual email or provider operation occurred.
+
+The browser walkthrough used the user's existing verified personal Chrome
+profile, not an isolated automated browser. It checked all six saved fields
+against SQL, confirmed every other table field stayed unchanged, verified
+reload persistence and submission locking in both languages, and confirmed
+private operator notes were absent from the host page. Turkish field validation
+and narrow-screen horizontal overflow were checked. Demo edits did not persist.
+Temporary servers and the disposable database were stopped and removed after
+verification; the browser viewport was restored and the test tab closed.
+
+The durable Playwright story was expanded to cover the revision loop and was
+typechecked, but **the Playwright browser suites were not executed in this
+pass** under the existing-browser-only instruction. The targeted Chrome
+walkthrough is the fresh browser evidence. It does not establish cross-browser,
+production-server, live-provider or launch readiness. No dependency audit was
+rerun; the earlier advisory findings below remain unresolved. No commit, push,
+publication, deployment or remote migration occurred.
+
+## Earlier dependency-update validation
+
 This record covers the dependency security update to the prepared portfolio
 source. Checks ran locally in a disposable copy with explicit test settings;
 they do not describe a hosted service or assert that a future CI run has passed.
 The November 3 validation preceded these dependency changes; the results below
 supersede its verification scope.
 
-## Latest results
+### Latest results
 
 | Check                          | Result                                      | Scope                                                         |
 | ------------------------------ | ------------------------------------------- | ------------------------------------------------------------- |
@@ -29,7 +78,7 @@ multiple hosts and userinfo, query/fragment overrides, malformed inputs, and
 errors that do not reveal supplied credentials. They make no database or
 network requests.
 
-## Dependency scope and remaining advisories
+### Dependency scope and remaining advisories
 
 Next.js and its ESLint configuration now match at 16.4.5. The update also uses
 React/React DOM 19.2.9, Better Auth and its matched adapters 1.7.16, Sentry
@@ -59,7 +108,7 @@ incompatible major override or advisory suppression was added. CI now runs the
 same production high-severity gate after its frozen install. These are package
 advisory results, not a complete application security assessment.
 
-## Browser evidence
+### Browser evidence
 
 The demo suite exercises public browsing, role walkthroughs, unavailable-payment
 behavior, privacy boundaries, keyboard access, and English/Turkish pages. It
@@ -85,7 +134,7 @@ These checks measure horizontal overflow; they are not a complete visual or
 accessibility audit. Demo and responsive suites ran separately so the responsive
 checks were not counted twice.
 
-## Test isolation
+### Test isolation
 
 Database setup, generated-type verification, integration tests, and browser
 checks used a disposable PostgreSQL 18 container bound to a randomly assigned
@@ -116,7 +165,7 @@ validation artifacts, outside the source changes. The screenshots in
 `docs/screens/` are earlier fictional-data walkthroughs, not captures from these
 runs.
 
-## Remaining verification limits
+### Remaining verification limits
 
 - Browser evidence covers Chromium and `next dev`, not other browser engines or
   a running production build.

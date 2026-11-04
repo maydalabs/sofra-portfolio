@@ -8,7 +8,7 @@ reviews, private feedback, safety reports, and payout holds have separate
 workflows.
 
 Built with Next.js, TypeScript, PostgreSQL 18, and Better Auth. The application
-has English and Turkish interfaces, 22 SQL migrations, and traveller, host,
+has English and Turkish interfaces, 23 SQL migrations, and traveller, host,
 partner, and operator workspaces. It uses fictional demo data and has no live
 booking or payment service.
 
@@ -57,6 +57,11 @@ Three concerns shape the implementation:
 
 The [architecture](docs/ARCHITECTURE.md), [privacy boundaries](docs/SECURITY_AND_PRIVACY.md),
 and [product decisions](docs/DECISIONS.md) explain the tradeoffs in more detail.
+
+Hosts can revise menu and experience details on their own draft or
+changes-requested tables, save them, and submit for operator approval. Saving
+does not change review status, scheduling, capacity, or pricing. Demo revisions
+validate input without saving it.
 
 ## Run the local walkthrough
 

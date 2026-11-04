@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test'
 import postgres from 'postgres'
 
+import en from '../messages/en.json'
+import tr from '../messages/tr.json'
+
 /**
  * The real product, in a browser: a person who actually signs in, against a
  * real database, with demo mode off.
@@ -66,9 +69,10 @@ test('a person can sign in with a magic link and reach their account', async ({
   await expect(page.getByText('demo08@sofra.invalid')).toBeVisible()
 })
 
-test('a certified host creates a table that is really written', async ({
+test('a certified host creates, revises and resubmits a durable table', async ({
   page,
 }) => {
+  test.setTimeout(90_000)
   // demo03 is certified and under the active-table limit.
   await signIn(page, 'demo03@sofra.invalid')
   await page.goto('/en/host/tables/new')
@@ -113,13 +117,111 @@ test('a certified host creates a table that is really written', async ({
     .toBe('draft')
 
   const [row] = await sql<
-    { host_net_payout_kurus: number; guest_price_kurus: number }[]
+    { id: string; host_net_payout_kurus: number; guest_price_kurus: number }[]
   >`
-    select host_net_payout_kurus, guest_price_kurus
+    select id, host_net_payout_kurus, guest_price_kurus
     from public.hosted_tables where menu_title = ${title}
   `
   // The host names their net in lira; the guest price is derived in SQL from
   // the pricing policy, never accepted from the browser.
   expect(row.host_net_payout_kurus).toBe(120_000)
   expect(row.guest_price_kurus).toBeGreaterThan(row.host_net_payout_kurus)
+
+  const readTable = async () => {
+    const [state] = await sql<
+      {
+        status: string
+        menu_title: string
+        menu_description: string
+        unchanged: Record<string, unknown>
+      }[]
+    >`
+      select status, menu_title, menu_description,
+        jsonb_build_object(
+          'slug', slug, 'format', format,
+          'starts_at', starts_at, 'booking_cutoff_at', booking_cutoff_at,
+          'roster_lock_at', roster_lock_at,
+          'proposed_capacity', proposed_capacity,
+          'certified_capacity', certified_capacity,
+          'available_seats', available_seats,
+          'minimum_guest_count', minimum_guest_count,
+          'host_net_payout_kurus', host_net_payout_kurus,
+          'guest_price_kurus', guest_price_kurus
+        ) as unchanged
+      from public.hosted_tables where id = ${row.id}::uuid
+    `
+    return state
+  }
+  const original = await readTable()
+  const privateReviewNote =
+    'E2E private operator review note: never show to hosts'
+
+  // Exercise both editable states and languages through the real save action.
+  for (const scenario of [
+    {
+      locale: 'en',
+      copy: en,
+      status: 'draft',
+      title: `${title} revised`,
+      menu: 'Lentil soup, seasonal vegetables, pilaf, fruit and Turkish tea.',
+    },
+    {
+      locale: 'tr',
+      copy: tr,
+      status: 'changes_requested',
+      title: `${title} yeniden`,
+      menu: 'Mercimek çorbası, zeytinyağlı sebzeler, pilav, meyve ve demli çay.',
+    },
+  ]) {
+    if (scenario.status === 'changes_requested') {
+      // Operator review is setup; the host must perform the revision in the UI.
+      await sql`
+        select public.review_hosted_table(
+          '10000000-0000-4000-8000-000000000009'::uuid,
+          ${row.id}::uuid, 'changes_requested', ${privateReviewNote}
+        )
+      `
+    }
+    const before = await readTable()
+    const copy = scenario.copy.ReviseTable
+    await page.goto(`/${scenario.locale}/host/tables/${row.id}/edit`)
+    const titleInput = page.getByLabel(copy.fields.menuTitle, { exact: true })
+    const menuInput = page.getByLabel(copy.fields.menuDescription, {
+      exact: true,
+    })
+    await expect(titleInput).toHaveValue(before.menu_title)
+    await expect(menuInput).toHaveValue(before.menu_description)
+    expect(await page.content()).not.toContain(privateReviewNote)
+
+    await titleInput.fill(scenario.title)
+    await menuInput.fill(scenario.menu)
+    const submit = page.getByRole('button', {
+      name: scenario.copy.HostPortal.submit,
+      exact: true,
+    })
+    await expect(submit).toBeDisabled()
+    await page.getByRole('button', { name: copy.save, exact: true }).click()
+    await expect(
+      page.getByText(copy.outcomes.saved, { exact: true }),
+    ).toBeVisible()
+    await expect.poll(readTable).toEqual({
+      status: scenario.status,
+      menu_title: scenario.title,
+      menu_description: scenario.menu,
+      unchanged: original.unchanged,
+    })
+
+    await page.reload()
+    await expect(titleInput).toHaveValue(scenario.title)
+    await expect(menuInput).toHaveValue(scenario.menu)
+    await expect(submit).toBeEnabled()
+    await submit.click()
+    await expect(page).toHaveURL(/submission=submitted/)
+    await expect(titleInput).toHaveCount(0)
+    await expect(
+      page.getByRole('button', { name: copy.save, exact: true }),
+    ).toHaveCount(0)
+    await expect.poll(async () => (await readTable()).status).toBe('submitted')
+    expect(await page.content()).not.toContain(privateReviewNote)
+  }
 })
