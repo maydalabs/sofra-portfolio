@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 import postgres from 'postgres'
 
-import en from '../messages/en.json'
-import tr from '../messages/tr.json'
+import en from '../messages/en.json' with { type: 'json' }
+import tr from '../messages/tr.json' with { type: 'json' }
 
 /**
  * The real product, in a browser: a person who actually signs in, against a
