@@ -4,8 +4,10 @@ import { getDatabase } from '@/server/database/client'
 import type { HostedTableStatus } from '@/server/database/database.types'
 import type { ReviseHostedTableDraftInput } from '../write-contracts'
 
+import { PostgresReadGateway } from './gateway'
 import { PostgresSofraHostWriteRepository } from './host-write-repository'
 import { PostgresSofraOperatorWriteRepository } from './operator-write-repository'
+import { PostgresSofraReadRepository } from './read-repository'
 
 const database = getDatabase()
 if (!database) throw new Error('DATABASE_URL is required for integration tests')
@@ -130,6 +132,82 @@ afterAll(async () => {
 })
 
 describe('reviseHostedTableDraft', () => {
+  it('reads a fresh draft through revision and resubmission without coordinates or private details', async () => {
+    const table = await createDraft()
+    const reads = new PostgresSofraReadRepository(
+      new PostgresReadGateway(sql, HOST),
+      HOST,
+    )
+    const publicReads = new PostgresSofraReadRepository(
+      new PostgresReadGateway(sql),
+    )
+
+    const expectReload = async (
+      status: HostedTableStatus,
+      content: Partial<typeof revision>,
+    ) => {
+      // Each read crosses the real gateway and mapper again, like reloading
+      // the editor after a durable write rather than trusting its response.
+      const reloaded = await reads.findHostTableById(table.id)
+      expect(reloaded).toMatchObject({
+        id: table.id,
+        status,
+        publicCoordinate: null,
+        ...content,
+      })
+      for (const field of [
+        'privateAddressId',
+        'exactAddress',
+        'preciseCoordinate',
+        'arrivalInstructions',
+        'private_address_id',
+      ]) {
+        expect(reloaded).not.toHaveProperty(field)
+      }
+      const serialized = JSON.stringify(reloaded)
+      expect(serialized).not.toContain(ADDRESS)
+      expect(serialized).not.toContain('PRIVATE TEST ADDRESS')
+      expect(serialized).not.toContain('PRIVATE OPERATOR REVIEW NOTE')
+      expect(
+        await publicReads.findPublicTableBySlug(table.slug),
+      ).toBeUndefined()
+      expect(await tableSnapshot(table.id)).toMatchObject({
+        public_approximate_latitude: null,
+        public_approximate_longitude: null,
+      })
+    }
+
+    await expectReload('draft', {
+      menuTitle: 'Original household supper',
+      menuDescription: 'The original complete household-selected dinner menu.',
+    })
+
+    await host.reviseHostedTableDraft({ tableId: table.id, ...revision })
+    await expectReload('draft', revision)
+    await host.submitHostedTable(table.id)
+    await expectReload('submitted', revision)
+
+    await operator.reviewHostedTable({
+      tableId: table.id,
+      decision: 'changes_requested',
+      reason: 'PRIVATE OPERATOR REVIEW NOTE',
+    })
+    await expectReload('changes_requested', revision)
+
+    const requestedRevision = {
+      ...revision,
+      menuTitle: 'Revised mercimek and a household supper',
+      accessibilityInformation: '',
+    }
+    await host.reviseHostedTableDraft({
+      tableId: table.id,
+      ...requestedRevision,
+    })
+    await expectReload('changes_requested', requestedRevision)
+    await host.submitHostedTable(table.id)
+    await expectReload('submitted', requestedRevision)
+  })
+
   it('saves trimmed draft text, preserves every other field, and audits no content', async () => {
     const table = await createDraft()
     const before = await tableSnapshot(table.id)

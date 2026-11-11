@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { RepositoryDataError, RepositoryUnavailableError } from '../errors'
 import type {
@@ -182,6 +182,106 @@ describe('PostgresSofraReadRepository', () => {
         compatibilityStatus: 'accepted',
       },
     ])
+  })
+
+  it.each([
+    { description: 'both coordinates absent', latitude: null, longitude: null },
+    { description: 'latitude absent', latitude: null, longitude: 29.03 },
+    { description: 'longitude absent', latitude: 40.99, longitude: null },
+  ])(
+    'keeps an owned draft readable with $description without inventing a location',
+    async ({ latitude, longitude }) => {
+      const draft = {
+        ...hostedTableRow,
+        status: 'draft' as const,
+        published_at: null,
+        public_approximate_latitude: latitude,
+        public_approximate_longitude: longitude,
+        // Even an over-broad gateway result must not supply a private fallback
+        // location or extend the host table's explicit read projection.
+        exact_address: 'PRIVATE TEST ADDRESS',
+        precise_latitude: 41.123456,
+        precise_longitude: 29.123456,
+        arrival_instructions: 'PRIVATE TEST ARRIVAL INSTRUCTIONS',
+        assessment_notes: 'PRIVATE TEST ASSESSMENT',
+        dietary_disclosure: 'PRIVATE TEST DIETARY DISCLOSURE',
+        guest_names: ['PRIVATE TEST GUEST'],
+      }
+      const repository = new PostgresSofraReadRepository(
+        createGateway({ readHostedTables: async () => [draft] }),
+        'actor-1',
+      )
+
+      const tables = await repository.listHostTables()
+      expect(tables).toHaveLength(1)
+      expect(tables[0]).toMatchObject({
+        id: draft.id,
+        householdId: householdRow.id,
+        status: 'draft',
+        neighborhood: draft.public_neighborhood,
+        publicCoordinate: null,
+        menuTitle: draft.menu_title,
+        hostNetPayoutKurus: draft.host_net_payout_kurus,
+      })
+      await expect(repository.findHostTableById(draft.id)).resolves.toEqual(
+        tables[0],
+      )
+      expect(JSON.stringify(tables)).not.toMatch(
+        /private.address|exact.address|precise|arrival.instructions|assessment|dietary|guest.names|PRIVATE TEST/i,
+      )
+    },
+  )
+
+  it.each([
+    { latitude: 40.99, longitude: 29.03 },
+    { latitude: 0, longitude: 29.03 },
+    { latitude: 40.99, longitude: 0 },
+    { latitude: 0, longitude: 0 },
+  ])(
+    'preserves a complete public coordinate pair ($latitude, $longitude) on a draft',
+    async ({ latitude, longitude }) => {
+      const repository = new PostgresSofraReadRepository(
+        createGateway({
+          readHostedTables: async () => [
+            {
+              ...hostedTableRow,
+              status: 'draft',
+              published_at: null,
+              public_approximate_latitude: latitude,
+              public_approximate_longitude: longitude,
+            },
+          ],
+        }),
+        'actor-1',
+      )
+
+      const table = await repository.findHostTableById(hostedTableRow.id)
+      expect(table?.publicCoordinate).toEqual({ latitude, longitude })
+    },
+  )
+
+  it('still rejects a coordinate-free draft outside the actor household scope', async () => {
+    const readOwnedHouseholds = vi.fn(async () => [householdRow])
+    const readHostedTables = vi.fn(async () => [
+      {
+        ...hostedTableRow,
+        household_id: 'another-household',
+        status: 'draft' as const,
+        published_at: null,
+        public_approximate_latitude: null,
+        public_approximate_longitude: null,
+      },
+    ])
+    const repository = new PostgresSofraReadRepository(
+      createGateway({ readOwnedHouseholds, readHostedTables }),
+      'actor-1',
+    )
+
+    await expect(
+      repository.findHostTableById(hostedTableRow.id),
+    ).rejects.toBeInstanceOf(RepositoryUnavailableError)
+    expect(readOwnedHouseholds).toHaveBeenCalledExactlyOnceWith('actor-1')
+    expect(readHostedTables).toHaveBeenCalledExactlyOnceWith([householdRow.id])
   })
 
   it('fails closed when protected reads have no actor', async () => {

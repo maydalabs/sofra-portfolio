@@ -146,13 +146,21 @@ test('a certified host creates, revises and resubmits a durable table', async ({
           'available_seats', available_seats,
           'minimum_guest_count', minimum_guest_count,
           'host_net_payout_kurus', host_net_payout_kurus,
-          'guest_price_kurus', guest_price_kurus
+          'guest_price_kurus', guest_price_kurus,
+          'public_approximate_latitude', public_approximate_latitude,
+          'public_approximate_longitude', public_approximate_longitude
         ) as unchanged
       from public.hosted_tables where id = ${row.id}::uuid
     `
     return state
   }
   const original = await readTable()
+  // A new draft has no verified public location. Editing must not require one
+  // or invent coordinates during save, reload and resubmission.
+  expect(original.unchanged).toMatchObject({
+    public_approximate_latitude: null,
+    public_approximate_longitude: null,
+  })
   const privateReviewNote =
     'E2E private operator review note: never show to hosts'
 

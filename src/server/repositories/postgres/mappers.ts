@@ -162,16 +162,14 @@ export function mapHostTable(
     startsAt: row.starts_at,
     timezone: row.timezone,
     neighborhood: row.public_neighborhood,
-    publicCoordinate: {
-      latitude: required(
-        row.public_approximate_latitude,
-        'hosted_tables.public_approximate_latitude',
-      ),
-      longitude: required(
-        row.public_approximate_longitude,
-        'hosted_tables.public_approximate_longitude',
-      ),
-    },
+    publicCoordinate:
+      row.public_approximate_latitude !== null &&
+      row.public_approximate_longitude !== null
+        ? {
+            latitude: row.public_approximate_latitude,
+            longitude: row.public_approximate_longitude,
+          }
+        : null,
     format: row.format,
     menuTitle: row.menu_title,
     menuDescription: row.menu_description,

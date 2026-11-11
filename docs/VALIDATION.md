@@ -1,4 +1,45 @@
-# Local validation — November 4, 2026
+# Validation
+
+## Drafts without approximate coordinates — November 11, 2026
+
+The November 5 JSON import repair let the durable browser test execute, exposing
+a separate host read-model defect: newly created drafts legitimately have null
+approximate coordinates, but the host mapper required both values. This repair
+returns `publicCoordinate: null` for an incomplete pair, as the domain and public
+mapper already permit. Complete pairs, including zero values, are preserved.
+No coordinates are invented, and disclosure rules and database writes are unchanged.
+
+| Local check                       | Result                                                 |
+| --------------------------------- | ------------------------------------------------------ |
+| Formatting, ESLint and TypeScript | Passed                                                 |
+| Unit/component/action suite       | 41 files, 176 tests passed                             |
+| Fixture-target checks             | 6 passed                                               |
+| PostgreSQL integration            | 12 files, 146 tests passed                             |
+| Schema and generated types        | 23 migrations applied; generated types matched         |
+| Production build                  | Passed; 68 pages generated                             |
+| Durable test discovery            | 3 tests listed successfully without a browser          |
+| Production dependency gate        | No high/critical findings; 2 moderate and 1 low remain |
+
+Before the mapper correction, three new unit cases and the new database journey
+failed with the original missing-coordinate error. They pass after the fix.
+Coverage includes absent and partial coordinate pairs, numeric zero, ownership
+checks, and private-field exclusion. The database journey creates a real draft,
+saves and rereads revisions, submits, receives requested changes, revises again
+and resubmits. Each read checks null coordinates and unpublished visibility.
+The existing English/Turkish browser journey retains its save/reload/resubmit
+assertions and now explicitly checks that coordinates stay null throughout.
+
+Local checks used Node.js 22.23.4, pnpm 11.28.10 and an inspected, empty
+PostgreSQL 18.6 database in a separate temporary container runtime, with a
+loopback-only port and fictional fixtures. The existing container runtime stayed
+stopped. Source validation used a separate copy excluding environment files and
+private artifacts; no live provider credentials were loaded. The temporary
+database and runtime were removed after validation.
+
+No local automated browser was launched. Browser execution is covered by the
+existing GitHub Quality workflow after the authorized push; this local record
+does not assert that workflow's outcome. No deployment, remote database migration,
+live payment or email operation was performed.
 
 ## Host draft revision — November 4, 2026
 
